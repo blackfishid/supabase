@@ -40,6 +40,7 @@ file_size_limit = "50MiB"
 [auth]
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
+enabled = true
 site_url = "http://localhost:3000"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 additional_redirect_urls = ["https://localhost:3000"]
@@ -65,7 +66,7 @@ enabled = true
 client_id = "env(GITHUB_CLIENT_ID)"
 secret = "env(GITHUB_SECRET)"
 # Overrides the default auth redirectUrl.
-redirect_uri = "http://localhost:54321/auth/v1/callback"
+redirect_uri = "http://localhost:5173/auth/v1/callback"
 
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
 # `discord`, `facebook`, `figma`, `github`, `gitlab`, `google`, `keycloak`, `linkedin`, `linkedin_oidc`, `notion`,
@@ -76,6 +77,27 @@ client_id = ""
 secret = ""
 # Overrides the default auth redirectUrl.
 redirect_uri = ""
+
+# Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
+# `discord`, `facebook`, `figma`, `github`, `gitlab`, `google`, `keycloak`, `linkedin`, `linkedin_oidc`, `notion`,
+# `twitch`, `twitter`, `slack`, `spotify`, `workos`, `zoom`.
+[auth.external.google]
+enabled = "env(ENABLE_GOOGLE_SIGNUP)"
+client_id = "env(GOOGLE_CLIENT_ID)"
+secret = "env(GOOGLE_SECRET)"
+# Overrides the default auth redirectUrl.
+redirect_uri = "http://localhost:5173/auth/v1/callback"
+
+# Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
+# `discord`, `facebook`, `figma`, `github`, `gitlab`, `google`, `keycloak`, `linkedin`, `linkedin_oidc`, `notion`,
+# `twitch`, `twitter`, `slack`, `spotify`, `workos`, `zoom`.
+[auth.external.azure]
+enabled = true
+client_id = "env(AZURE_CLIENT_ID)"
+secret = "env(AZURE_SECRET)"
+# Overrides the default auth redirectUrl.
+redirect_uri = "http://localhost:5173/auth/v1/callback"
+
 # Overrides the default auth provider URL. Used to support self-hosted gitlab, single-tenant Azure,
 # or any other third-party OIDC providers.
 url = ""
