@@ -8,8 +8,8 @@ name: supabase
 version: "3.8"
 
 services:
-  studio:
-    container_name: supabase-studio
+  bfid_studio:
+    container_name: supabase-bfid-studio
     image: supabase/studio:20240729-ce42139
     restart: unless-stopped
     healthcheck:
@@ -24,31 +24,31 @@ services:
       interval: 5s
       retries: 3
     depends_on:
-      analytics:
+      bfid_analytics:
         condition: service_healthy
     environment:
-      STUDIO_PG_META_URL: http://meta:8080
+      STUDIO_PG_META_URL: http://bfid_meta:8080
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
       DEFAULT_ORGANIZATION_NAME: ${STUDIO_DEFAULT_ORGANIZATION}
       DEFAULT_PROJECT_NAME: ${STUDIO_DEFAULT_PROJECT}
 
-      SUPABASE_URL: http://kong:8000
+      SUPABASE_URL: http://bfid_kong:8000
       SUPABASE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL}
       SUPABASE_ANON_KEY: ${ANON_KEY}
       SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
       AUTH_JWT_SECRET: ${JWT_SECRET}
 
       LOGFLARE_API_KEY: ${LOGFLARE_API_KEY}
-      LOGFLARE_URL: http://analytics:4000
+      LOGFLARE_URL: http://bfid_analytics:4000
       NEXT_PUBLIC_ENABLE_LOGS: true
       # Comment to use Big Query backend for analytics
       NEXT_ANALYTICS_BACKEND_PROVIDER: postgres
       # Uncomment to use Big Query backend for analytics
       # NEXT_ANALYTICS_BACKEND_PROVIDER: bigquery
 
-  kong:
-    container_name: supabase-kong
+  bfid_kong:
+    container_name: supabase-bfid-kong
     image: kong:2.8.1
     restart: unless-stopped
     # https://unix.stackexchange.com/a/294837
@@ -57,7 +57,7 @@ services:
       - ${KONG_HTTP_PORT}:8000/tcp
       - ${KONG_HTTPS_PORT}:8443/tcp
     depends_on:
-      analytics:
+      bfid_analytics:
         condition: service_healthy
     environment:
       KONG_DATABASE: "off"
@@ -74,15 +74,17 @@ services:
     volumes:
       # https://github.com/supabase/supabase/issues/12661
       - ./volumes/api/kong.yml:/home/kong/temp.yml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
-  auth:
-    container_name: supabase-auth
+  bfid_auth:
+    container_name: supabase-bfid-auth
     image: supabase/gotrue:v2.158.1
     depends_on:
-      db:
+      bfid_db:
         # Disable this if you are using an external Postgres database
         condition: service_healthy
-      analytics:
+      bfid_analytics:
         condition: service_healthy
     healthcheck:
       test:
@@ -98,6 +100,8 @@ services:
       interval: 5s
       retries: 3
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       GOTRUE_API_HOST: 0.0.0.0
       GOTRUE_API_PORT: 9999
@@ -148,14 +152,14 @@ services:
 
 
 
-  rest:
-    container_name: supabase-rest
+  bfid_rest:
+    container_name: supabase-bfid-rest
     image: postgrest/postgrest:v12.2.0
     depends_on:
-      db:
+      bfid_db:
         # Disable this if you are using an external Postgres database
         condition: service_healthy
-      analytics:
+      bfid_analytics:
         condition: service_healthy
     restart: unless-stopped
     environment:
@@ -168,15 +172,15 @@ services:
       PGRST_APP_SETTINGS_JWT_EXP: ${JWT_EXPIRY}
     command: "postgrest"
 
-  realtime:
+  bfid_realtime:
     # This container name looks inconsistent but is correct because realtime constructs tenant id by parsing the subdomain
-    container_name: realtime-dev.supabase-realtime
+    container_name: realtime-dev.supabase-bfid-realtime
     image: supabase/realtime:v2.30.34
     depends_on:
-      db:
+      bfid_db:
         # Disable this if you are using an external Postgres database
         condition: service_healthy
-      analytics:
+      bfid_analytics:
         condition: service_healthy
     healthcheck:
       test:
@@ -213,16 +217,16 @@ services:
       SEED_SELF_HOST: true
 
   # To use S3 backed storage: docker compose -f docker-compose.yml -f docker-compose.s3.yml up
-  storage:
-    container_name: supabase-storage
+  bfid_storage:
+    container_name: supabase-bfid-storage
     image: supabase/storage-api:v1.10.1
     depends_on:
-      db:
+      bfid_db:
         # Disable this if you are using an external Postgres database
         condition: service_healthy
-      rest:
+      bfid_rest:
         condition: service_started
-      imgproxy:
+      bfid_imgproxy:
         condition: service_started
     healthcheck:
       test:
@@ -241,7 +245,7 @@ services:
     environment:
       ANON_KEY: ${ANON_KEY}
       SERVICE_KEY: ${SERVICE_ROLE_KEY}
-      POSTGREST_URL: http://rest:3000
+      POSTGREST_URL: http://bfid_rest:3000
       PGRST_JWT_SECRET: ${JWT_SECRET}
       DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       FILE_SIZE_LIMIT: 52428800
@@ -252,12 +256,12 @@ services:
       REGION: stub
       GLOBAL_S3_BUCKET: stub
       ENABLE_IMAGE_TRANSFORMATION: "true"
-      IMGPROXY_URL: http://imgproxy:5001
+      IMGPROXY_URL: http://bfid_imgproxy:5001
     volumes:
       - ./volumes/storage:/var/lib/storage:z
 
-  imgproxy:
-    container_name: supabase-imgproxy
+  bfid_imgproxy:
+    container_name: supabase-bfid-imgproxy
     image: darthsim/imgproxy:v3.8.0
     healthcheck:
       test: [ "CMD", "imgproxy", "health" ]
@@ -272,14 +276,14 @@ services:
     volumes:
       - ./volumes/storage:/var/lib/storage:z
 
-  meta:
-    container_name: supabase-meta
+  bfid_meta:
+    container_name: supabase-bfid-meta
     image: supabase/postgres-meta:v0.83.2
     depends_on:
-      db:
+      bfid_db:
         # Disable this if you are using an external Postgres database
         condition: service_healthy
-      analytics:
+      bfid_analytics:
         condition: service_healthy
     restart: unless-stopped
     environment:
@@ -290,16 +294,16 @@ services:
       PG_META_DB_USER: supabase_admin
       PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD}
 
-  functions:
-    container_name: supabase-edge-functions
+  bfid_functions:
+    container_name: supabase-bfid-edge-functions
     image: supabase/edge-runtime:v1.56.1
     restart: unless-stopped
     depends_on:
-      analytics:
+      bfid_analytics:
         condition: service_healthy
     environment:
       JWT_SECRET: ${JWT_SECRET}
-      SUPABASE_URL: http://kong:8000
+      SUPABASE_URL: http://bfid_kong:8000
       SUPABASE_ANON_KEY: ${ANON_KEY}
       SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
       SUPABASE_DB_URL: postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
@@ -312,8 +316,8 @@ services:
       - --main-service
       - /home/deno/functions/main
 
-  analytics:
-    container_name: supabase-analytics
+  bfid_analytics:
+    container_name: supabase-bfid-analytics
     image: supabase/logflare:1.4.0
     healthcheck:
       test: [ "CMD", "curl", "http://localhost:4000/health" ]
@@ -322,7 +326,7 @@ services:
       retries: 10
     restart: unless-stopped
     depends_on:
-      db:
+      bfid_db:
         # Disable this if you are using an external Postgres database
         condition: service_healthy
     # Uncomment to use Big Query backend for analytics
@@ -355,8 +359,8 @@ services:
       - 4000:4000
 
   # Comment out everything below this point if you are using an external Postgres database
-  db:
-    container_name: supabase-db
+  bfid_db:
+    container_name: supabase-bfid-db
     image: supabase/postgres:15.1.1.78
     healthcheck:
       test: pg_isready -U postgres -h localhost
@@ -364,7 +368,7 @@ services:
       timeout: 5s
       retries: 10
     depends_on:
-      vector:
+      bfid_vector:
         condition: service_healthy
     command:
       - postgres
@@ -401,8 +405,8 @@ services:
       # Use named volume to persist pgsodium decryption key between restarts
       - db-config:/etc/postgresql-custom
 
-  vector:
-    container_name: supabase-vector
+  bfid_vector:
+    container_name: supabase-bfid-vector
     image: timberio/vector:0.28.1-alpine
     healthcheck:
       test:
@@ -413,7 +417,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://vector:9001/health"
+          "http://bfid_vector:9001/health"
         ]
       timeout: 5s
       interval: 5s

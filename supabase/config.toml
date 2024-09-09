@@ -40,6 +40,7 @@ file_size_limit = "50MiB"
 [auth]
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
+enabled = true
 site_url = "http://localhost:3000"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 additional_redirect_urls = ["https://localhost:3000"]
@@ -81,7 +82,7 @@ redirect_uri = ""
 # `discord`, `facebook`, `figma`, `github`, `gitlab`, `google`, `keycloak`, `linkedin`, `linkedin_oidc`, `notion`,
 # `twitch`, `twitter`, `slack`, `spotify`, `workos`, `zoom`.
 [auth.external.google]
-enabled = true
+enabled = "env(ENABLE_GOOGLE_SIGNUP)"
 client_id = "env(GOOGLE_CLIENT_ID)"
 secret = "env(GOOGLE_SECRET)"
 # Overrides the default auth redirectUrl.
